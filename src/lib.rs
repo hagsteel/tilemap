@@ -16,6 +16,9 @@ pub trait Scalar :
 {}
 
 impl Scalar for usize {}
+impl Scalar for u32 {}
+impl Scalar for u16 {}
+impl Scalar for u8 {}
 
 pub struct TileMap<T, U: Scalar> {
     tiles: Vec<T>,
