@@ -1,39 +1,20 @@
-use std::ops::{Add, Div, Mul, Sub};
-use std::cmp::{Ord, PartialOrd};
-pub trait Scalar :
-      Sized
-      + PartialEq
-      + Copy
-      + PartialOrd
-      + Ord
-      + Eq
-      + Add<Self, Output = Self>
-      + Sub<Self, Output = Self>
-      + Mul<Self, Output = Self>
-      + Div<Self, Output = Self>
-      + Into<usize>
-      + From<usize>
-{}
-
-impl Scalar for usize {}
-impl Scalar for u32 {}
-impl Scalar for u16 {}
-impl Scalar for u8 {}
-
-pub struct TileMap<T, U: Scalar> {
+pub struct TileMap<T> {
     tiles: Vec<T>,
-    pub width: U,
-    pub height: U,
+    pub width: u16,
+    pub height: u16,
 }
 
-impl<T, U: Scalar> TileMap<T, U> {
-    pub fn to_index(&self, p: (U, U)) -> U {
+impl<T> TileMap<T> {
+    pub fn to_index(&self, p: (u16, u16)) -> u16 {
         p.0 + p.1 * self.width
     }
 
-    pub fn new(width: U, height: U) -> Self {
+    pub fn new(width: u16, height: u16) -> Self {
+        let cap = (width * height) as usize;
+        debug_assert!(cap <= u16::MAX as usize);
+
         Self {
-            tiles: Vec::with_capacity(width.into() * height.into()),
+            tiles: Vec::with_capacity(cap),
             width,
             height,
         }
@@ -47,13 +28,13 @@ impl<T, U: Scalar> TileMap<T, U> {
         self.tiles.append(&mut tiles);
     }
 
-    pub fn get(&self, index: U) -> &T {
-        &self.tiles[index.into()]
+    pub fn get(&self, index: u16) -> &T {
+        &self.tiles[index as usize]
     }
 
-    pub fn by_coords(&self, p: (U, U)) -> Option<&T> {
+    pub fn by_coords(&self, p: (u16, u16)) -> Option<&T> {
         let index = self.to_index(p);
-        if index.into()  > self.tiles.len() {
+        if index as usize > self.tiles.len() {
             None
         } else {
             Some(self.get(index))
@@ -61,10 +42,10 @@ impl<T, U: Scalar> TileMap<T, U> {
     }
 
     /// x1 and y1 has to be smaller than x2 and y2
-    pub fn coords_in_area(&self, p1: (U, U), p2: (U, U)) -> impl Iterator<Item = (U, U)> {
+    pub fn coords_in_area(&self, p1: (u16, u16), p2: (u16, u16)) -> impl Iterator<Item = (u16, u16)> {
         debug_assert!(p1.0 <= p2.0);
         debug_assert!(p1.1 <= p2.1);
-        (p1.1.into()..=p2.1.into()).flat_map(move |y| (p1.0.into()..=p2.0.into()).map(move |x| (x.into(), y.into())))
+        (p1.1..=p2.1).flat_map(move |y| (p1.0..=p2.0).map(move |x| (x, y)))
     }
 }
 
@@ -74,7 +55,7 @@ mod tests {
 
     #[test]
     fn test_coords_to_index() {
-        let map = TileMap::<usize, usize>::new(4, 2);
+        let map = TileMap::<usize>::new(4, 2);
         let index = map.to_index((0, 1));
         assert_eq!(index, 4);
     }
@@ -105,7 +86,7 @@ mod tests {
 
     #[test]
     fn using_u16() {
-        let mut map = TileMap::new(4, 2);
+        let mut map = TileMap::new(4u16, 2);
         map.append(vec![0u16, 1, 2, 3, 4, 5, 6, 7]);
     }
 }
